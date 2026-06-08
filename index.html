@@ -35,8 +35,66 @@
   --r2:14px;
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;overflow:hidden;}
-.screen{display:none;flex-direction:column;height:100vh;max-width:480px;margin:0 auto;}
+.screen{display:none;flex-direction:column;height:100vh;height:100dvh;max-width:480px;margin:0 auto;}
 .screen.active{display:flex;}
+.setup-footer{padding-bottom:max(16px,env(safe-area-inset-bottom))!important;}
+
+/* ── DEALER PICK ── */
+.dealer-pick-top{
+  padding:36px 24px 24px;
+  border-bottom:1px solid var(--border);
+  background:var(--bg);flex-shrink:0;
+}
+.dealer-pick-top h1{font-size:28px;font-weight:600;letter-spacing:-0.5px;color:var(--text);line-height:1;}
+.dealer-pick-top p{font-size:14px;color:var(--text2);margin-top:4px;}
+.dealer-pick-body{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:40px 24px;gap:20px;
+}
+.dealer-result-wrap{
+  width:100%;min-height:120px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--r2);padding:24px;
+  transition:border-color 0.3s;
+}
+.dealer-result-wrap.picked{border-color:var(--amber);}
+.dealer-name-display{
+  font-size:36px;font-weight:700;letter-spacing:-0.5px;
+  color:var(--amber);opacity:0;transition:opacity 0.3s;
+  text-align:center;
+}
+.dealer-name-display.visible{opacity:1;}
+.dealer-name-display.spinning{
+  animation:spin-names 0.08s steps(1) infinite;
+  opacity:1;
+}
+@keyframes spin-names{
+  0%{opacity:0.3;}50%{opacity:1;}100%{opacity:0.3;}
+}
+.dealer-name-sub{
+  font-size:13px;color:var(--text3);margin-top:6px;
+  opacity:0;transition:opacity 0.3s;text-align:center;
+}
+.dealer-name-sub.visible{opacity:1;}
+.dealer-spin-btn{
+  width:100%;height:52px;background:var(--bg2);
+  border:1px solid var(--border2);border-radius:var(--r);
+  font-size:15px;font-weight:500;color:var(--text);
+  cursor:pointer;font-family:var(--font);
+  transition:background 0.15s,border-color 0.15s;
+}
+.dealer-spin-btn:hover{background:var(--bg3);border-color:var(--border3);}
+.dealer-start-btn{
+  width:100%;height:52px;background:var(--accent);
+  border:none;border-radius:var(--r);
+  font-size:15px;font-weight:600;color:#fff;
+  cursor:pointer;font-family:var(--font);
+  transition:opacity 0.15s;
+}
+.dealer-start-btn:hover{opacity:0.88;}
 
 /* ── SETUP ── */
 .setup-top{
@@ -99,6 +157,23 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   transition:background 0.15s,border-color 0.15s;margin-top:6px;width:100%;
 }
 .add-btn:hover{background:var(--accent-dim);border-color:var(--accent);}
+
+.randomize-btn{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  height:40px;background:transparent;border:1px solid var(--border2);
+  border-radius:var(--r);color:var(--text2);font-size:13px;
+  font-weight:500;cursor:pointer;font-family:var(--font);
+  transition:background 0.15s,border-color 0.15s,color 0.15s;
+  margin-top:8px;width:100%;
+}
+.randomize-btn:hover{background:var(--bg3);border-color:var(--border3);color:var(--text);}
+.randomize-result{
+  margin-top:8px;padding:10px 14px;
+  background:var(--amber-dim);border:1px solid var(--amber);
+  border-radius:var(--r);font-size:13px;color:var(--amber);
+  font-weight:500;text-align:center;display:none;
+}
+.randomize-result.visible{display:block;}
 
 .rounds-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
 .round-cell{display:flex;flex-direction:column;align-items:center;gap:8px;}
@@ -477,7 +552,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   </div>
   <div class="setup-body">
     <div>
-      <div class="s-label">Players <span id="player-count-label">3 of 8</span></div>
+      <div class="s-label">Players <span id="player-count-label">4 of 8</span></div>
       <div class="player-list" id="player-list"></div>
       <button class="add-btn" id="add-player-btn">+ Add player</button>
     </div>
@@ -507,6 +582,23 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   <div class="setup-footer">
     <div class="err-msg" id="setup-err"></div>
     <button class="btn-primary" id="start-game-btn">Start game</button>
+  </div>
+</div>
+
+<!-- DEALER PICK -->
+<div id="screen-dealer" class="screen">
+  <div class="dealer-pick-top">
+    <div class="app-wordmark">Up & Down</div>
+    <h1 id="dealer-pick-heading">Who deals first?</h1>
+    <p id="dealer-pick-sub">Tap the button to randomly choose the first dealer</p>
+  </div>
+  <div class="dealer-pick-body">
+    <div class="dealer-result-wrap" id="dealer-result-wrap">
+      <div class="dealer-name-display" id="dealer-name-display"></div>
+      <div class="dealer-name-sub" id="dealer-name-sub"></div>
+    </div>
+    <button class="dealer-spin-btn" id="dealer-spin-btn">🎲 Choose first dealer</button>
+    <button class="dealer-start-btn" id="dealer-start-btn" style="display:none;">Start game →</button>
   </div>
 </div>
 
@@ -617,7 +709,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 const $=id=>document.getElementById(id);
 
 // ── STATE ──
-let players=['Alex','Sam','Jordan'];
+let players=['Abhinav','Brandon','Ezrah','Kip'];
 let sequence=[];
 let currentRoundIdx=0;
 let viewingRoundIdx=0;
@@ -627,6 +719,7 @@ let roundData=[];
 // roundData[i] = { bids:[null,...], results:[null,...] }
 let bidRestrictionOn=true;
 let revealedScores={};
+let dealerOffset=0;
 let ongoingGames=JSON.parse(localStorage.getItem('ud_ongoing')||'[]');
 let lastGame=null;
 let confirmCb=null;
@@ -638,9 +731,9 @@ function buildSeq(s,t,e){
   for(let i=t-1;i>=e;i--) q.push(i);
   return q;
 }
-function getDealer(ri){return players[ri%players.length];}
+function getDealer(ri){return players[(ri+dealerOffset)%players.length];}
 function getOrder(ri){
-  const d=ri%players.length,o=[];
+  const d=(ri+dealerOffset)%players.length,o=[];
   for(let i=0;i<players.length;i++) o.push((d+i)%players.length);
   return o;
 }
@@ -666,7 +759,7 @@ function saveOngoing(){
   const g={
     ...lastGame,
     players:[...players],sequence:[...sequence],
-    currentRoundIdx,roundPhase,
+    currentRoundIdx,roundPhase,dealerOffset,
     roundData:JSON.parse(JSON.stringify(roundData)),
     bidRestrictionOn,ts:Date.now()
   };
@@ -806,11 +899,11 @@ $('start-game-btn').addEventListener('click',()=>{
   const s=parseInt($('r-start').value),t=parseInt($('r-turn').value),e=parseInt($('r-end').value);
   sequence=buildSeq(s,t,e);
   players=players.filter(p=>p.trim());
-  currentRoundIdx=0;viewingRoundIdx=0;roundPhase='bidding';
+  currentRoundIdx=0;viewingRoundIdx=0;roundPhase='bidding';dealerOffset=0;
   roundData=sequence.map(()=>({bids:players.map(()=>null),results:players.map(()=>null)}));
   revealedScores={};bidRestrictionOn=true;
   lastGame={id:Date.now(),start:s,turn:t,end:e,players:[...players]};
-  renderGame();show('screen-game');
+  renderDealerPick();show('screen-dealer');
 });
 
 function resumeGame(g){
@@ -819,9 +912,61 @@ function resumeGame(g){
   roundPhase=g.roundPhase||'bidding';
   roundData=JSON.parse(JSON.stringify(g.roundData));
   bidRestrictionOn=g.bidRestrictionOn;revealedScores={};
+  dealerOffset=g.dealerOffset||0;
   lastGame={id:g.id,start:g.sequence[0],turn:Math.max(...g.sequence),end:g.sequence[g.sequence.length-1],players:[...players]};
   renderGame();show('screen-game');
 }
+
+// ── DEALER PICK ──
+function renderDealerPick(){
+  $('dealer-pick-heading').textContent='Who deals first?';
+  $('dealer-pick-sub').textContent='Tap the button to randomly choose the first dealer';
+  $('dealer-name-display').textContent='';
+  $('dealer-name-display').className='dealer-name-display';
+  $('dealer-name-sub').textContent='';
+  $('dealer-name-sub').className='dealer-name-sub';
+  $('dealer-result-wrap').classList.remove('picked');
+  $('dealer-spin-btn').textContent='🎲 Choose first dealer';
+  $('dealer-start-btn').style.display='none';
+}
+
+$('dealer-spin-btn').addEventListener('click',()=>{
+  const nameEl=$('dealer-name-display');
+  const subEl=$('dealer-name-sub');
+  const wrapEl=$('dealer-result-wrap');
+  const spinBtn=$('dealer-spin-btn');
+  const startBtn=$('dealer-start-btn');
+
+  spinBtn.disabled=true;
+  nameEl.className='dealer-name-display spinning';
+  subEl.className='dealer-name-sub';
+  wrapEl.classList.remove('picked');
+
+  let ticks=0;
+  const maxTicks=18;
+  const interval=setInterval(()=>{
+    const rand=players[Math.floor(Math.random()*players.length)];
+    nameEl.textContent=rand;
+    ticks++;
+    if(ticks>=maxTicks){
+      clearInterval(interval);
+      const picked=players[Math.floor(Math.random()*players.length)];
+      dealerOffset=players.indexOf(picked);
+      nameEl.className='dealer-name-display visible';
+      nameEl.textContent=picked;
+      subEl.textContent='deals first';
+      subEl.className='dealer-name-sub visible';
+      wrapEl.classList.add('picked');
+      spinBtn.textContent='🎲 Re-randomize';
+      spinBtn.disabled=false;
+      startBtn.style.display='block';
+    }
+  },80);
+});
+
+$('dealer-start-btn').addEventListener('click',()=>{
+  renderGame();show('screen-game');
+});
 
 // ── GAME ──
 function renderGame(){
@@ -1044,7 +1189,7 @@ $('home-btn').addEventListener('click',()=>{
   showConfirm('Leave game?','Progress will be saved. Resume from the home screen.',()=>{
     saveOngoing();
     ongoingGames=JSON.parse(localStorage.getItem('ud_ongoing')||'[]');
-    players=['Alex','Sam','Jordan'];
+    players=['Abhinav','Brandon','Ezrah','Kip'];
     renderSetup();show('screen-setup');
   });
 });
@@ -1143,17 +1288,17 @@ function showResults(){
 }
 
 $('back-home-btn').addEventListener('click',()=>{
-  players=['Alex','Sam','Jordan'];renderSetup();show('screen-setup');
+  players=['Abhinav','Brandon','Ezrah','Kip'];renderSetup();show('screen-setup');
 });
 $('play-again-btn').addEventListener('click',()=>{
   if(!lastGame) {renderSetup();show('screen-setup');return;}
   players=[...lastGame.players];
   sequence=buildSeq(lastGame.start,lastGame.turn,lastGame.end);
-  currentRoundIdx=0;viewingRoundIdx=0;roundPhase='bidding';
+  currentRoundIdx=0;viewingRoundIdx=0;roundPhase='bidding';dealerOffset=0;
   roundData=sequence.map(()=>({bids:players.map(()=>null),results:players.map(()=>null)}));
   revealedScores={};bidRestrictionOn=true;
   lastGame={...lastGame,id:Date.now()};
-  renderGame();show('screen-game');
+  renderDealerPick();show('screen-dealer');
 });
 
 // ── CONFIRM ──
