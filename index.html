@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Up & Down</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0e0f11;
+  --bg2:#161719;
+  --bg3:#1e2024;
+  --bg4:#26292e;
+  --border:#ffffff0f;
+  --border2:#ffffff18;
+  --border3:#ffffff28;
+  --text:#f0f0ee;
+  --text2:#9a9a96;
+  --text3:#5a5a56;
+  --accent:#4f7fff;
+  --accent-dim:#4f7fff22;
+  --accent-text:#7fa3ff;
+  --green:#22c55e;
+  --green-dim:#22c55e1a;
+  --red:#ef4444;
+  --red-dim:#ef44441a;
+  --amber:#f59e0b;
+  --amber-dim:#f59e0b1a;
+  --font:'DM Sans',sans-serif;
+  --mono:'DM Mono',monospace;
+  --r:10px;
+  --r2:14px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;overflow:hidden;}
+.screen{display:none;flex-direction:column;height:100vh;max-width:480px;margin:0 auto;}
+.screen.active{display:flex;}
+
+/* ── SETUP ── */
+.setup-top{
+  padding:36px 24px 24px;
+  border-bottom:1px solid var(--border);
+  background:var(--bg);
+  flex-shrink:0;
+}
+.app-wordmark{
+  font-size:11px;letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--text3);font-weight:500;margin-bottom:12px;
+}
+.setup-top h1{
+  font-size:28px;font-weight:600;letter-spacing:-0.5px;
+  color:var(--text);line-height:1;
+}
+.setup-top p{font-size:14px;color:var(--text2);margin-top:4px;}
+
+.setup-body{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:28px;}
+.setup-body::-webkit-scrollbar{display:none;}
+
+.s-label{
+  font-size:10px;letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--text3);font-weight:500;margin-bottom:12px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.s-label span{font-size:12px;text-transform:none;letter-spacing:0;color:var(--text3);}
+
+.player-list{display:flex;flex-direction:column;gap:6px;}
+.player-row{
+  display:flex;align-items:center;gap:10px;
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--r);padding:0 12px;height:48px;
+  transition:border-color 0.15s;
+}
+.player-row:focus-within{border-color:var(--border3);}
+.drag-handle{
+  display:flex;flex-direction:column;gap:3.5px;
+  cursor:grab;flex-shrink:0;padding:4px 2px;
+}
+.drag-handle span{display:block;width:12px;height:1.5px;background:var(--text3);border-radius:2px;}
+.player-input{
+  flex:1;border:none;outline:none;background:transparent;
+  font-size:15px;color:var(--text);font-family:var(--font);
+}
+.player-input::placeholder{color:var(--text3);}
+.remove-btn{
+  background:none;border:none;cursor:pointer;
+  color:var(--text3);font-size:20px;line-height:1;
+  padding:4px;border-radius:6px;transition:color 0.15s;
+  display:flex;align-items:center;justify-content:center;
+}
+.remove-btn:hover{color:var(--red);}
+
+.add-btn{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  height:44px;background:transparent;border:1px dashed var(--border2);
+  border-radius:var(--r);color:var(--accent-text);font-size:13px;
+  font-weight:500;cursor:pointer;font-family:var(--font);
+  transition:background 0.15s,border-color 0.15s;margin-top:6px;width:100%;
+}
+.add-btn:hover{background:var(--accent-dim);border-color:var(--accent);}
+
+.rounds-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.round-cell{display:flex;flex-direction:column;align-items:center;gap:8px;}
+.round-box{
+  width:100%;height:72px;background:var(--bg2);
+  border:1px solid var(--border);border-radius:var(--r);
+  text-align:center;font-size:28px;font-weight:500;
+  color:var(--text);outline:none;font-family:var(--mono);
+  transition:border-color 0.15s;-moz-appearance:textfield;
+}
+.round-box::-webkit-inner-spin-button,.round-box::-webkit-outer-spin-button{-webkit-appearance:none;}
+.round-box:focus{border-color:var(--border3);}
+.round-cell-label{font-size:11px;color:var(--text3);letter-spacing:0.05em;}
+
+.rounds-preview{
+  display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;
+}
+.preview-pill{
+  font-size:11px;font-family:var(--mono);
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:20px;padding:3px 9px;color:var(--text2);
+}
+
+.ongoing-empty{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--r);padding:18px;text-align:center;
+  color:var(--text3);font-size:13px;
+}
+.ongoing-card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--r);padding:14px 16px;cursor:pointer;
+  margin-bottom:6px;transition:border-color 0.15s,background 0.15s;
+  position:relative;
+}
+.ongoing-card:hover{border-color:var(--border3);background:var(--bg3);}
+.ongoing-card-top{display:flex;align-items:center;justify-content:space-between;}
+.ongoing-card-players{font-size:14px;font-weight:500;color:var(--text);}
+.ongoing-card-meta{font-size:12px;color:var(--text2);margin-top:3px;}
+.ongoing-delete{
+  background:none;border:none;cursor:pointer;color:var(--text3);
+  font-size:16px;padding:4px 6px;border-radius:6px;
+  transition:color 0.15s;line-height:1;
+}
+.ongoing-delete:hover{color:var(--red);}
+
+.setup-footer{
+  padding:16px 24px;background:var(--bg);border-top:1px solid var(--border);
+  flex-shrink:0;
+}
+.err-msg{font-size:11px;color:var(--red);min-height:16px;margin-bottom:8px;}
+
+.btn-primary{
+  width:100%;height:48px;background:var(--accent);color:#fff;
+  border:none;border-radius:var(--r);font-size:15px;font-weight:600;
+  cursor:pointer;font-family:var(--font);letter-spacing:-0.1px;
+  transition:opacity 0.15s,transform 0.1s;
+}
+.btn-primary:disabled{opacity:0.25;cursor:not-allowed;}
+.btn-primary:not(:disabled):active{transform:scale(0.98);}
+
+/* ── GAME HEADER ── */
+.game-header{
+  background:var(--bg);border-bottom:1px solid var(--border);
+  padding:0 16px;display:flex;align-items:center;
+  justify-content:space-between;height:52px;flex-shrink:0;
+}
+.game-title{font-size:13px;font-weight:500;color:var(--text2);letter-spacing:0.02em;}
+.icon-btn{
+  width:36px;height:36px;border-radius:var(--r);border:1px solid var(--border);
+  background:transparent;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;color:var(--text2);transition:background 0.15s,border-color 0.15s;
+}
+.icon-btn:hover{background:var(--bg3);border-color:var(--border2);}
+.icon-btn svg{pointer-events:none;}
+
+/* ── PROGRESS BAR ── */
+.progress-wrap{
+  background:var(--bg);border-bottom:1px solid var(--border);
+  padding:10px 20px 14px;flex-shrink:0;
+}
+.progress-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.progress-label{font-size:12px;color:var(--text2);font-weight:500;}
+.progress-sub{font-size:11px;color:var(--text3);}
+.progress-bar-bg{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:var(--accent);border-radius:2px;transition:width 0.4s ease;}
+
+/* ── ROUND PILLS ── */
+.pills-wrap{
+  background:var(--bg);padding:10px 16px 14px;
+  overflow-x:auto;display:flex;gap:5px;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+  scrollbar-width:none;
+}
+.pills-wrap::-webkit-scrollbar{display:none;}
+.pill{
+  flex-shrink:0;min-width:34px;height:34px;border-radius:8px;
+  border:1px solid var(--border);background:var(--bg2);
+  font-size:12px;font-weight:500;color:var(--text3);
+  cursor:pointer;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:0 8px;
+  position:relative;transition:all 0.12s;font-family:var(--font);
+  padding-bottom:0;
+}
+.pill.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent-text);}
+.pill.past{color:var(--text2);}
+.pill.past.done{color:var(--green);border-color:#22c55e22;background:#22c55e0a;}
+.pill.locked{opacity:0.3;cursor:default;}
+.curr-badge{
+  position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);
+  background:var(--green);color:#000;font-size:7px;font-weight:700;
+  letter-spacing:0.08em;padding:1px 5px;border-radius:4px;
+  white-space:nowrap;text-transform:uppercase;
+}
+
+/* ── ROUND HEADER ── */
+.round-header{
+  padding:20px 24px 16px;text-align:center;
+  background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.round-phase-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;letter-spacing:0.1em;text-transform:uppercase;
+  font-weight:600;margin-bottom:8px;
+}
+.phase-dot{width:6px;height:6px;border-radius:50%;}
+.card-count{font-size:36px;font-weight:700;letter-spacing:-1px;line-height:1;}
+.dealer-tag{font-size:12px;color:var(--text3);margin-top:4px;}
+
+/* ── BIDDING PHASE ── */
+.players-wrap{flex:1;overflow-y:auto;background:var(--bg);}
+.players-wrap::-webkit-scrollbar{display:none;}
+
+.player-bid-row{
+  display:flex;align-items:center;
+  padding:0 20px;height:66px;
+  border-bottom:1px solid var(--border);gap:14px;
+}
+.pbr-name{flex:1;font-size:15px;font-weight:500;color:var(--text);}
+.pbr-name-sub{font-size:11px;color:var(--text3);margin-top:1px;}
+
+.bid-field-wrap{position:relative;}
+.bid-field{
+  width:60px;height:44px;border-radius:var(--r);
+  border:1px solid var(--border2);background:var(--bg3);
+  text-align:center;font-size:20px;font-weight:500;
+  color:var(--text);outline:none;font-family:var(--mono);
+  transition:border-color 0.15s,background 0.15s;
+  -moz-appearance:textfield;
+}
+.bid-field::-webkit-inner-spin-button,.bid-field::-webkit-outer-spin-button{-webkit-appearance:none;}
+.bid-field:focus{border-color:var(--accent);background:var(--accent-dim);}
+.bid-field.invalid{border-color:var(--red);background:var(--red-dim);}
+.bid-field:disabled{opacity:0.35;}
+.bid-err{
+  position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);
+  font-size:9px;color:var(--red);white-space:nowrap;font-weight:500;
+}
+
+.result-btns{display:flex;gap:6px;}
+.res-btn{
+  width:44px;height:44px;border-radius:var(--r);
+  border:1px solid var(--border2);background:var(--bg3);
+  font-size:16px;cursor:pointer;display:flex;
+  align-items:center;justify-content:center;
+  transition:all 0.12s;color:var(--text3);font-family:var(--font);
+}
+.res-btn:disabled{opacity:0.2;cursor:default;}
+.res-btn.active-win{background:var(--green);border-color:var(--green);color:#fff;}
+.res-btn.active-lose{background:var(--red);border-color:var(--red);color:#fff;}
+.res-btn:not(:disabled):not(.active-win):not(.active-lose):hover{
+  border-color:var(--border3);background:var(--bg4);color:var(--text);
+}
+
+/* ── GAME FOOTER ── */
+.game-footer{
+  background:var(--bg);border-top:1px solid var(--border);
+  padding:14px 20px;display:flex;gap:8px;flex-shrink:0;
+}
+.btn-ghost{
+  flex:1;height:44px;background:transparent;
+  border:1px solid var(--border2);border-radius:var(--r);
+  font-size:13px;font-weight:500;color:var(--text2);
+  cursor:pointer;font-family:var(--font);transition:all 0.15s;
+}
+.btn-ghost:hover{background:var(--bg3);border-color:var(--border3);color:var(--text);}
+.btn-next{
+  flex:1.5;height:44px;background:var(--accent);color:#fff;
+  border:none;border-radius:var(--r);font-size:14px;font-weight:600;
+  cursor:pointer;font-family:var(--font);transition:opacity 0.15s,transform 0.1s;
+}
+.btn-next:disabled{opacity:0.2;cursor:not-allowed;}
+.btn-next:not(:disabled):active{transform:scale(0.98);}
+.btn-end-game{
+  width:100%;height:44px;background:transparent;
+  border:1px solid var(--amber);border-radius:var(--r);
+  font-size:14px;font-weight:600;color:var(--amber);
+  cursor:pointer;font-family:var(--font);transition:all 0.15s;
+}
+.btn-end-game:hover{background:var(--amber-dim);}
+
+/* ── SCORE MODAL ── */
+.modal-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.7);z-index:100;
+  align-items:flex-end;justify-content:center;
+}
+.modal-overlay.open{display:flex;}
+.modal-sheet{
+  background:var(--bg2);border-radius:16px 16px 0 0;
+  width:100%;max-width:480px;max-height:80vh;
+  overflow-y:auto;border:1px solid var(--border2);border-bottom:none;
+}
+.modal-sheet::-webkit-scrollbar{display:none;}
+.modal-handle{width:32px;height:3px;background:var(--bg4);border-radius:2px;margin:12px auto 0;}
+.modal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px 12px;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:var(--bg2);z-index:1;
+}
+.modal-title{font-size:14px;font-weight:600;color:var(--text);}
+
+.score-player{padding:14px 18px;border-bottom:1px solid var(--border);}
+.score-player-header{display:flex;align-items:baseline;gap:8px;margin-bottom:10px;}
+.score-player-name{font-size:15px;font-weight:600;color:var(--text);}
+.score-wins-badge{
+  font-size:11px;color:var(--text3);
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:20px;padding:2px 8px;
+}
+.score-chips{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+.score-chips::-webkit-scrollbar{display:none;}
+.s-chip{
+  flex-shrink:0;min-width:32px;height:28px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:500;font-family:var(--mono);padding:0 6px;
+}
+.s-chip.correct{background:var(--green-dim);color:var(--green);}
+.s-chip.wrong{background:var(--red-dim);color:var(--red);text-decoration:line-through;}
+.s-chip.empty{background:var(--bg3);color:var(--text3);}
+
+.score-total-row{
+  display:flex;align-items:center;gap:8px;margin-top:10px;
+}
+.score-total-label{font-size:11px;color:var(--text3);}
+.score-total-val{
+  font-size:13px;font-weight:600;color:var(--text);font-family:var(--mono);
+  filter:blur(5px);transition:filter 0.2s;cursor:pointer;user-select:none;
+}
+.score-total-val.revealed{filter:none;}
+.reveal-hint{font-size:10px;color:var(--text3);}
+
+/* ── MENU MODAL ── */
+.menu-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 18px;border-bottom:1px solid var(--border);
+}
+.menu-item-info{}
+.menu-item-label{font-size:14px;font-weight:500;color:var(--text);}
+.menu-item-sub{font-size:12px;color:var(--text3);margin-top:2px;}
+.toggle{
+  width:44px;height:26px;background:var(--bg4);border-radius:13px;
+  position:relative;cursor:pointer;border:none;transition:background 0.2s;flex-shrink:0;
+}
+.toggle.on{background:var(--accent);}
+.toggle::after{
+  content:'';position:absolute;width:20px;height:20px;
+  background:#fff;border-radius:50%;top:3px;left:3px;
+  transition:transform 0.2s;
+}
+.toggle.on::after{transform:translateX(18px);}
+.menu-danger-btn{
+  margin:16px 18px;width:calc(100% - 36px);height:42px;
+  background:transparent;border:1px solid var(--red);
+  border-radius:var(--r);color:var(--red);font-size:14px;
+  font-weight:500;cursor:pointer;font-family:var(--font);
+  transition:background 0.15s;
+}
+.menu-danger-btn:hover{background:var(--red-dim);}
+
+/* ── CONFIRM ── */
+.confirm-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.75);z-index:200;
+  align-items:center;justify-content:center;padding:24px;
+}
+.confirm-overlay.open{display:flex;}
+.confirm-box{
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:var(--r2);padding:24px 20px 20px;
+  width:100%;max-width:320px;
+}
+.confirm-title{font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px;}
+.confirm-msg{font-size:13px;color:var(--text2);line-height:1.55;}
+.confirm-btns{display:flex;gap:8px;margin-top:20px;}
+.confirm-cancel{
+  flex:1;height:42px;background:transparent;border:1px solid var(--border2);
+  border-radius:var(--r);font-size:14px;font-weight:500;
+  cursor:pointer;font-family:var(--font);color:var(--text2);transition:all 0.15s;
+}
+.confirm-cancel:hover{background:var(--bg3);}
+.confirm-ok{
+  flex:1;height:42px;background:var(--red);border:none;
+  border-radius:var(--r);font-size:14px;font-weight:600;
+  color:#fff;cursor:pointer;font-family:var(--font);transition:opacity 0.15s;
+}
+.confirm-ok:hover{opacity:0.85;}
+
+/* ── RESULTS ── */
+.results-top{
+  background:var(--bg);border-bottom:1px solid var(--border);
+  padding:36px 24px 24px;text-align:center;flex-shrink:0;
+}
+.trophy{font-size:40px;line-height:1;margin-bottom:10px;}
+.results-eyebrow{
+  font-size:10px;letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--text3);font-weight:500;margin-bottom:6px;
+}
+.results-headline{
+  font-size:28px;font-weight:700;letter-spacing:-0.5px;color:var(--text);
+}
+
+.results-body{flex:1;overflow-y:auto;background:var(--bg);}
+.results-body::-webkit-scrollbar{display:none;}
+
+.result-row{
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  display:flex;flex-direction:column;gap:10px;
+}
+.result-row.winner-row{border-left:2px solid var(--amber);}
+.result-row-top{display:flex;align-items:center;gap:12px;}
+.rank-circle{
+  width:30px;height:30px;border-radius:50%;
+  background:var(--bg3);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;color:var(--text3);flex-shrink:0;
+}
+.rank-circle.gold{background:var(--amber-dim);border-color:var(--amber);color:var(--amber);}
+.result-name{flex:1;font-size:16px;font-weight:600;color:var(--text);}
+.result-score{font-size:16px;font-weight:700;font-family:var(--mono);color:var(--text);}
+.result-score.gold-score{color:var(--amber);}
+.result-sub{font-size:11px;color:var(--text3);margin-left:42px;}
+.result-chips{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding-left:42px;}
+.result-chips::-webkit-scrollbar{display:none;}
+
+.results-footer{
+  padding:14px 20px;background:var(--bg);
+  border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;
+}
+
+/* ── DESKTOP ── */
+@media(min-width:520px){
+  body{display:flex;justify-content:center;align-items:flex-start;}
+  .screen{border-left:1px solid var(--border);border-right:1px solid var(--border);}
+  .modal-overlay{justify-content:center;}
+  .modal-sheet{max-width:480px;border-radius:16px;margin-bottom:48px;border-bottom:1px solid var(--border2);}
+  .confirm-overlay{justify-content:center;}
+}
+
+/* ── VIEWING PAST ROUND BANNER ── */
+.past-banner{
+  background:var(--amber-dim);border-bottom:1px solid var(--amber);
+  padding:8px 20px;text-align:center;font-size:12px;
+  color:var(--amber);font-weight:500;flex-shrink:0;display:none;
+}
+.past-banner.visible{display:block;}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="screen-setup" class="screen active">
+  <div class="setup-top">
+    <div class="app-wordmark">Up & Down</div>
+    <h1>New game</h1>
+    <p>Set up players and rounds</p>
+  </div>
+  <div class="setup-body">
+    <div>
+      <div class="s-label">Players <span id="player-count-label">3 of 8</span></div>
+      <div class="player-list" id="player-list"></div>
+      <button class="add-btn" id="add-player-btn">+ Add player</button>
+    </div>
+    <div>
+      <div class="s-label">Rounds</div>
+      <div class="rounds-grid">
+        <div class="round-cell">
+          <input class="round-box" type="number" id="r-start" value="1" min="1" max="20" inputmode="numeric">
+          <span class="round-cell-label">Start</span>
+        </div>
+        <div class="round-cell">
+          <input class="round-box" type="number" id="r-turn" value="7" min="1" max="20" inputmode="numeric">
+          <span class="round-cell-label">Turn</span>
+        </div>
+        <div class="round-cell">
+          <input class="round-box" type="number" id="r-end" value="1" min="1" max="20" inputmode="numeric">
+          <span class="round-cell-label">End</span>
+        </div>
+      </div>
+      <div class="rounds-preview" id="rounds-preview"></div>
+    </div>
+    <div>
+      <div class="s-label">Ongoing games</div>
+      <div id="ongoing-list"></div>
+    </div>
+  </div>
+  <div class="setup-footer">
+    <div class="err-msg" id="setup-err"></div>
+    <button class="btn-primary" id="start-game-btn">Start game</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="screen-game" class="screen">
+  <div class="game-header">
+    <button class="icon-btn" id="home-btn" aria-label="Home">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+    </button>
+    <span class="game-title">Up & Down</span>
+    <button class="icon-btn" id="menu-btn" aria-label="Menu">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+    </button>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-row">
+      <span class="progress-label" id="progress-label">Round 1 of 13</span>
+      <span class="progress-sub" id="progress-sub">Bidding</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="pills-wrap" id="round-pills"></div>
+  <div class="past-banner" id="past-banner">Viewing past round — editable</div>
+
+  <div class="round-header">
+    <div class="round-phase-badge" id="phase-badge">
+      <span class="phase-dot" id="phase-dot"></span>
+      <span id="phase-label-text"></span>
+    </div>
+    <div class="card-count" id="card-count-label">1 Card</div>
+    <div class="dealer-tag" id="dealer-label">Dealer: —</div>
+  </div>
+
+  <div class="players-wrap" id="players-wrap"></div>
+
+  <div class="game-footer" id="game-footer">
+    <button class="btn-ghost" id="scores-btn">View scores</button>
+    <button class="btn-next" id="next-btn">Next</button>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="screen-results" class="screen">
+  <div class="results-top">
+    <div class="trophy" id="results-trophy">🏆</div>
+    <div class="results-eyebrow">Final scores</div>
+    <div class="results-headline" id="results-headline">— wins!</div>
+  </div>
+  <div class="results-body" id="results-body"></div>
+  <div class="results-footer">
+    <button class="btn-ghost" id="back-home-btn">Home</button>
+    <button class="btn-next" id="play-again-btn">Play again</button>
+  </div>
+</div>
+
+<!-- SCORE MODAL -->
+<div class="modal-overlay" id="score-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">Score sheet</span>
+      <button class="icon-btn" id="close-score-modal" style="border-color:transparent;" aria-label="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="score-sheet-body"></div>
+  </div>
+</div>
+
+<!-- MENU MODAL -->
+<div class="modal-overlay" id="menu-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">Options</span>
+      <button class="icon-btn" id="close-menu-modal" style="border-color:transparent;" aria-label="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="menu-item">
+      <div class="menu-item-info">
+        <div class="menu-item-label">Bid restriction</div>
+        <div class="menu-item-sub" id="restriction-sub">Last bidder can't match card count</div>
+      </div>
+      <button class="toggle on" id="restriction-toggle" aria-label="Toggle bid restriction"></button>
+    </div>
+    <button class="menu-danger-btn" id="menu-end-btn">End game early</button>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirm-title">Are you sure?</div>
+    <div class="confirm-msg" id="confirm-msg"></div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" id="confirm-cancel">Cancel</button>
+      <button class="confirm-ok" id="confirm-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+
+// ── STATE ──
+let players=['Alex','Sam','Jordan'];
+let sequence=[];
+let currentRoundIdx=0;
+let viewingRoundIdx=0;
+// phase: 'bidding' | 'results'
+let roundPhase='bidding';
+let roundData=[];
+// roundData[i] = { bids:[null,...], results:[null,...] }
+let bidRestrictionOn=true;
+let revealedScores={};
+let ongoingGames=JSON.parse(localStorage.getItem('ud_ongoing')||'[]');
+let lastGame=null;
+let confirmCb=null;
+
+// ── UTILS ──
+function buildSeq(s,t,e){
+  const q=[];
+  for(let i=s;i<=t;i++) q.push(i);
+  for(let i=t-1;i>=e;i--) q.push(i);
+  return q;
+}
+function getDealer(ri){return players[ri%players.length];}
+function getOrder(ri){
+  const d=ri%players.length,o=[];
+  for(let i=0;i<players.length;i++) o.push((d+i)%players.length);
+  return o;
+}
+function calcPts(bid,res){return res==='win'?bid+10:0;}
+function playerTotal(pi,upTo){
+  let t=0;
+  for(let r=0;r<upTo;r++){
+    const rd=roundData[r];
+    if(rd&&rd.results[pi]!==null) t+=calcPts(rd.bids[pi],rd.results[pi]);
+  }
+  return t;
+}
+function roundComplete(ri){
+  const rd=roundData[ri];
+  return rd&&rd.bids.every(b=>b!==null)&&rd.results.every(r=>r!==null);
+}
+function allBidsDone(ri){
+  const rd=roundData[ri];
+  return rd&&rd.bids.every(b=>b!==null);
+}
+function saveOngoing(){
+  if(!lastGame) return;
+  const g={
+    ...lastGame,
+    players:[...players],sequence:[...sequence],
+    currentRoundIdx,roundPhase,
+    roundData:JSON.parse(JSON.stringify(roundData)),
+    bidRestrictionOn,ts:Date.now()
+  };
+  const idx=ongoingGames.findIndex(x=>x.id===lastGame.id);
+  if(idx>=0) ongoingGames[idx]=g; else ongoingGames.unshift(g);
+  localStorage.setItem('ud_ongoing',JSON.stringify(ongoingGames));
+}
+function removeOngoing(id){
+  ongoingGames=ongoingGames.filter(g=>g.id!==id);
+  localStorage.setItem('ud_ongoing',JSON.stringify(ongoingGames));
+}
+
+// ── SCREENS ──
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+// ── SETUP ──
+function renderSetup(){
+  renderPlayerList();
+  renderOngoing();
+  updateSequencePreview();
+  validateSetup();
+}
+
+function renderPlayerList(){
+  const list=$('player-list');
+  list.innerHTML='';
+  players.forEach((name,i)=>{
+    const row=document.createElement('div');
+    row.className='player-row';
+    row.draggable=true;
+    row.dataset.idx=i;
+    row.innerHTML=`
+      <div class="drag-handle" aria-hidden="true"><span></span><span></span><span></span></div>
+      <input class="player-input" type="text" value="${name}" placeholder="Player name" maxlength="20" data-idx="${i}">
+      <button class="remove-btn" data-idx="${i}" aria-label="Remove">×</button>
+    `;
+    list.appendChild(row);
+  });
+  list.querySelectorAll('.player-input').forEach(inp=>{
+    inp.addEventListener('input',e=>{
+      players[+e.target.dataset.idx]=e.target.value;
+      updatePlayerCount();validateSetup();
+    });
+  });
+  list.querySelectorAll('.remove-btn').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      if(players.length<=2) return;
+      players.splice(+e.target.dataset.idx,1);
+      renderPlayerList();validateSetup();
+    });
+  });
+  let dragIdx=null;
+  list.querySelectorAll('.player-row').forEach(row=>{
+    row.addEventListener('dragstart',()=>{dragIdx=+row.dataset.idx;row.style.opacity='0.4';});
+    row.addEventListener('dragend',()=>{row.style.opacity='1';});
+    row.addEventListener('dragover',e=>e.preventDefault());
+    row.addEventListener('drop',e=>{
+      e.preventDefault();
+      const to=+row.dataset.idx;
+      if(dragIdx===null||dragIdx===to) return;
+      const mv=players.splice(dragIdx,1)[0];
+      players.splice(to,0,mv);
+      renderPlayerList();
+    });
+  });
+  updatePlayerCount();
+}
+
+function updatePlayerCount(){
+  const n=players.filter(p=>p.trim()).length;
+  $('player-count-label').textContent=`${n} of 8`;
+  $('add-player-btn').style.display=players.length>=8?'none':'flex';
+}
+
+function updateSequencePreview(){
+  const s=parseInt($('r-start').value),t=parseInt($('r-turn').value),e=parseInt($('r-end').value);
+  const el=$('rounds-preview');
+  if(isNaN(s)||isNaN(t)||isNaN(e)||t<s||t<e) {el.innerHTML='';return;}
+  const seq=buildSeq(s,t,e);
+  el.innerHTML=seq.map(n=>`<span class="preview-pill">${n}</span>`).join('');
+}
+
+function validateSetup(){
+  const s=parseInt($('r-start').value),t=parseInt($('r-turn').value),e=parseInt($('r-end').value);
+  let err='';
+  if(isNaN(s)||isNaN(t)||isNaN(e)) err='Fill in all round values.';
+  else if(t<s||t<e) err='Turn must be ≥ Start and ≥ End.';
+  else if([s,t,e].some(v=>v<1||v>20)) err='Values must be between 1 and 20.';
+  $('setup-err').textContent=err;
+  const ok=players.filter(p=>p.trim()).length>=2&&!err;
+  $('start-game-btn').disabled=!ok;
+}
+
+function renderOngoing(){
+  const el=$('ongoing-list');
+  const games=JSON.parse(localStorage.getItem('ud_ongoing')||'[]');
+  ongoingGames=games;
+  if(!games.length){el.innerHTML='<div class="ongoing-empty">No ongoing games</div>';return;}
+  el.innerHTML='';
+  games.forEach(g=>{
+    const card=document.createElement('div');
+    card.className='ongoing-card';
+    const rn=g.currentRoundIdx+1,tot=g.sequence.length;
+    card.innerHTML=`
+      <div class="ongoing-card-top">
+        <div class="ongoing-card-players">${g.players.join(' · ')}</div>
+        <button class="ongoing-delete" data-id="${g.id}" aria-label="Delete">×</button>
+      </div>
+      <div class="ongoing-card-meta">${g.sequence[0]}→${Math.max(...g.sequence)}→${g.sequence[g.sequence.length-1]} · Round ${rn} of ${tot}</div>
+    `;
+    card.addEventListener('click',e=>{
+      if(e.target.classList.contains('ongoing-delete')) return;
+      resumeGame(g);
+    });
+    card.querySelector('.ongoing-delete').addEventListener('click',e=>{
+      e.stopPropagation();
+      removeOngoing(g.id);
+      renderOngoing();
+    });
+    el.appendChild(card);
+  });
+}
+
+$('add-player-btn').addEventListener('click',()=>{
+  if(players.length>=8) return;
+  players.push('');
+  renderPlayerList();
+  $('player-list').querySelectorAll('.player-input')[players.length-1].focus();
+});
+['r-start','r-turn','r-end'].forEach(id=>{
+  $(id).addEventListener('input',()=>{validateSetup();updateSequencePreview();});
+});
+$('start-game-btn').addEventListener('click',()=>{
+  const s=parseInt($('r-start').value),t=parseInt($('r-turn').value),e=parseInt($('r-end').value);
+  sequence=buildSeq(s,t,e);
+  players=players.filter(p=>p.trim());
+  currentRoundIdx=0;viewingRoundIdx=0;roundPhase='bidding';
+  roundData=sequence.map(()=>({bids:players.map(()=>null),results:players.map(()=>null)}));
+  revealedScores={};bidRestrictionOn=true;
+  lastGame={id:Date.now(),start:s,turn:t,end:e,players:[...players]};
+  renderGame();show('screen-game');
+});
+
+function resumeGame(g){
+  players=[...g.players];sequence=[...g.sequence];
+  currentRoundIdx=g.currentRoundIdx;viewingRoundIdx=g.currentRoundIdx;
+  roundPhase=g.roundPhase||'bidding';
+  roundData=JSON.parse(JSON.stringify(g.roundData));
+  bidRestrictionOn=g.bidRestrictionOn;revealedScores={};
+  lastGame={id:g.id,start:g.sequence[0],turn:Math.max(...g.sequence),end:g.sequence[g.sequence.length-1],players:[...players]};
+  renderGame();show('screen-game');
+}
+
+// ── GAME ──
+function renderGame(){
+  renderPills();
+  renderProgress();
+  renderRoundHeader();
+  renderPlayersWrap();
+  renderFooter();
+  $('past-banner').classList.toggle('visible',viewingRoundIdx!==currentRoundIdx);
+}
+
+function renderProgress(){
+  const total=sequence.length;
+  const done=currentRoundIdx+(roundPhase==='results'?0.5:0);
+  const pct=Math.round((done/total)*100);
+  $('progress-fill').style.width=pct+'%';
+  $('progress-label').textContent=`Round ${currentRoundIdx+1} of ${total}`;
+  const isViewing=viewingRoundIdx!==currentRoundIdx;
+  $('progress-sub').textContent=isViewing?'Past round':(roundPhase==='bidding'?'Bidding':'Results');
+}
+
+function renderPills(){
+  const wrap=$('round-pills');
+  wrap.innerHTML='';
+  sequence.forEach((cards,i)=>{
+    const pill=document.createElement('button');
+    pill.className='pill';
+    if(i===viewingRoundIdx) pill.classList.add('active');
+    if(i<currentRoundIdx) pill.classList.add('past','done');
+    else if(i===currentRoundIdx) pill.classList.add('past');
+    if(i>currentRoundIdx) pill.classList.add('locked');
+    pill.textContent=cards;
+    if(i===currentRoundIdx){
+      const b=document.createElement('div');
+      b.className='curr-badge';b.textContent='Now';
+      pill.appendChild(b);
+      pill.style.marginBottom='8px';
+    }
+    if(i<=currentRoundIdx){
+      pill.addEventListener('click',()=>{viewingRoundIdx=i;renderGame();});
+    }
+    wrap.appendChild(pill);
+  });
+}
+
+function renderRoundHeader(){
+  const cards=sequence[viewingRoundIdx];
+  $('card-count-label').textContent=`${cards} ${cards===1?'Card':'Cards'}`;
+  $('dealer-label').textContent=`Dealer: ${getDealer(viewingRoundIdx)}`;
+  const isViewing=viewingRoundIdx!==currentRoundIdx;
+  const phase=isViewing?'past':roundPhase;
+  const dot=$('phase-dot');
+  const lbl=$('phase-label-text');
+  if(phase==='bidding'){
+    dot.style.background='#4f7fff';lbl.textContent='Bidding phase';
+  } else if(phase==='results'){
+    dot.style.background='#22c55e';lbl.textContent='Results phase';
+  } else {
+    dot.style.background='#f59e0b';lbl.textContent='Past round';
+  }
+}
+
+function renderPlayersWrap(){
+  const wrap=$('players-wrap');
+  wrap.innerHTML='';
+  const isViewing=viewingRoundIdx!==currentRoundIdx;
+  const rd=roundData[viewingRoundIdx];
+  const cards=sequence[viewingRoundIdx];
+  const order=getOrder(viewingRoundIdx);
+  const phase=isViewing?'past':roundPhase;
+
+  order.forEach((pIdx,pos)=>{
+    const name=players[pIdx];
+    const bid=rd.bids[pIdx];
+    const result=rd.results[pIdx];
+    const isLastBidder=pos===order.length-1;
+    const row=document.createElement('div');
+    row.className='player-bid-row';
+
+    // Name col
+    const nameCol=document.createElement('div');
+    nameCol.className='pbr-name';
+    nameCol.innerHTML=`<div>${name}</div>`;
+
+    // Bid col
+    const bidWrap=document.createElement('div');
+    bidWrap.className='bid-field-wrap';
+    const bidInp=document.createElement('input');
+    bidInp.className='bid-field';
+    bidInp.type='number';
+    bidInp.inputMode='numeric';
+    bidInp.pattern='[0-9]*';
+    bidInp.min=0;bidInp.max=cards;
+    bidInp.placeholder='—';
+    if(bid!==null) bidInp.value=bid;
+    const errEl=document.createElement('div');
+    errEl.className='bid-err';
+    bidWrap.appendChild(bidInp);
+    bidWrap.appendChild(errEl);
+
+    // For results phase or past round, bid is read-only unless viewing past
+    if(phase==='results'&&!isViewing){
+      bidInp.disabled=true;
+    }
+
+    bidInp.addEventListener('input',()=>{
+      const v=parseInt(bidInp.value);
+      bidInp.classList.remove('invalid');errEl.textContent='';
+      if(bidInp.value===''||isNaN(v)){rd.bids[pIdx]=null;renderFooter();return;}
+      if(v<0||v>cards){
+        bidInp.classList.add('invalid');errEl.textContent='Invalid';
+        rd.bids[pIdx]=null;renderFooter();return;
+      }
+      if(bidRestrictionOn&&isLastBidder&&cards>1){
+        const others=order.slice(0,-1).reduce((s,idx)=>s+(rd.bids[idx]??0),0);
+        if(others+v===cards){
+          bidInp.classList.add('invalid');errEl.textContent='Invalid';
+          rd.bids[pIdx]=null;renderFooter();return;
+        }
+      }
+      rd.bids[pIdx]=v;
+      renderFooter();
+    });
+
+    // Result buttons
+    const resCol=document.createElement('div');
+    resCol.className='result-btns';
+    const winBtn=document.createElement('button');
+    winBtn.className='res-btn';winBtn.textContent='✓';
+    const loseBtn=document.createElement('button');
+    loseBtn.className='res-btn';loseBtn.textContent='✕';
+
+    if(phase==='bidding'&&!isViewing){
+      winBtn.disabled=true;loseBtn.disabled=true;
+      winBtn.style.display='none';loseBtn.style.display='none';
+    } else {
+      winBtn.disabled=bid===null;
+      loseBtn.disabled=bid===null;
+      if(result==='win') winBtn.classList.add('active-win');
+      if(result==='lose') loseBtn.classList.add('active-lose');
+      winBtn.addEventListener('click',()=>{
+        rd.results[pIdx]=rd.results[pIdx]==='win'?null:'win';
+        renderPlayersWrap();renderFooter();
+      });
+      loseBtn.addEventListener('click',()=>{
+        rd.results[pIdx]=rd.results[pIdx]==='lose'?null:'lose';
+        renderPlayersWrap();renderFooter();
+      });
+    }
+    resCol.appendChild(winBtn);resCol.appendChild(loseBtn);
+
+    row.appendChild(nameCol);row.appendChild(bidWrap);row.appendChild(resCol);
+    wrap.appendChild(row);
+  });
+}
+
+function renderFooter(){
+  const footer=$('game-footer');
+  footer.innerHTML='';
+  const isViewing=viewingRoundIdx!==currentRoundIdx;
+
+  if(isViewing){
+    const backBtn=document.createElement('button');
+    backBtn.className='btn-ghost';backBtn.textContent='← Current round';
+    backBtn.addEventListener('click',()=>{viewingRoundIdx=currentRoundIdx;renderGame();});
+    const scoresBtn=document.createElement('button');
+    scoresBtn.className='btn-next';scoresBtn.textContent='View scores';
+    scoresBtn.addEventListener('click',openScores);
+    footer.appendChild(backBtn);footer.appendChild(scoresBtn);
+    return;
+  }
+
+  const scoresBtn=document.createElement('button');
+  scoresBtn.className='btn-ghost';scoresBtn.textContent='View scores';
+  scoresBtn.addEventListener('click',openScores);
+
+  const nextBtn=document.createElement('button');
+  nextBtn.className='btn-next';
+
+  if(roundPhase==='bidding'){
+    const allBids=allBidsDone(currentRoundIdx);
+    nextBtn.disabled=!allBids;
+    nextBtn.textContent='Play round →';
+    nextBtn.addEventListener('click',()=>{
+      roundPhase='results';
+      renderGame();
+    });
+  } else {
+    // results phase
+    const isLastRound=currentRoundIdx===sequence.length-1;
+    const allResults=roundData[currentRoundIdx].results.every(r=>r!==null);
+
+    if(isLastRound){
+      // Show end game button spanning full width
+      const endBtn=document.createElement('button');
+      endBtn.className='btn-end-game';
+      endBtn.textContent='End game → See final scores';
+      endBtn.disabled=!allResults;
+      endBtn.addEventListener('click',()=>{
+        removeOngoing(lastGame?.id);
+        showResults();
+      });
+      footer.appendChild(endBtn);
+      return;
+    } else {
+      nextBtn.disabled=!allResults;
+      nextBtn.textContent='Next round →';
+      nextBtn.addEventListener('click',()=>{
+        currentRoundIdx++;viewingRoundIdx=currentRoundIdx;roundPhase='bidding';
+        saveOngoing();renderGame();
+      });
+    }
+  }
+
+  footer.appendChild(scoresBtn);footer.appendChild(nextBtn);
+}
+
+// ── NAV EVENTS ──
+$('home-btn').addEventListener('click',()=>{
+  showConfirm('Leave game?','Progress will be saved. Resume from the home screen.',()=>{
+    saveOngoing();
+    ongoingGames=JSON.parse(localStorage.getItem('ud_ongoing')||'[]');
+    players=['Alex','Sam','Jordan'];
+    renderSetup();show('screen-setup');
+  });
+});
+$('menu-btn').addEventListener('click',()=>$('menu-modal').classList.add('open'));
+$('close-menu-modal').addEventListener('click',()=>$('menu-modal').classList.remove('open'));
+$('menu-modal').addEventListener('click',e=>{if(e.target===$('menu-modal'))$('menu-modal').classList.remove('open');});
+$('restriction-toggle').addEventListener('click',()=>{
+  bidRestrictionOn=!bidRestrictionOn;
+  $('restriction-toggle').classList.toggle('on',bidRestrictionOn);
+  $('restriction-sub').textContent=bidRestrictionOn?"Last bidder can't match card count":'No bid restrictions';
+});
+$('menu-end-btn').addEventListener('click',()=>{
+  $('menu-modal').classList.remove('open');
+  showConfirm('End game early?','Final scores will be shown with current data.',()=>{
+    removeOngoing(lastGame?.id);showResults();
+  });
+});
+
+// ── SCORES ──
+function openScores(){renderScoreSheet();$('score-modal').classList.add('open');}
+$('close-score-modal').addEventListener('click',()=>$('score-modal').classList.remove('open'));
+$('score-modal').addEventListener('click',e=>{if(e.target===$('score-modal'))$('score-modal').classList.remove('open');});
+
+function renderScoreSheet(){
+  const body=$('score-sheet-body');body.innerHTML='';
+  const played=currentRoundIdx+(roundPhase==='results'&&roundComplete(currentRoundIdx)?1:0);
+  players.forEach((name,pIdx)=>{
+    const div=document.createElement('div');
+    div.className='score-player';
+    let wins=0,total=0;
+    const chips=sequence.slice(0,Math.max(currentRoundIdx+1,played)).map((c,ri)=>{
+      const rd=roundData[ri];
+      if(!rd||rd.results[pIdx]===null) return `<div class="s-chip empty">—</div>`;
+      const pts=calcPts(rd.bids[pIdx],rd.results[pIdx]);
+      total+=pts;
+      if(rd.results[pIdx]==='win'){wins++;return `<div class="s-chip correct">${pts}</div>`;}
+      return `<div class="s-chip wrong">${rd.bids[pIdx]}</div>`;
+    }).join('');
+    const rev=revealedScores[pIdx];
+    div.innerHTML=`
+      <div class="score-player-header">
+        <span class="score-player-name">${name}</span>
+        <span class="score-wins-badge">${wins} wins</span>
+      </div>
+      <div class="score-chips">${chips}</div>
+      <div class="score-total-row">
+        <span class="score-total-label">Total</span>
+        <span class="score-total-val${rev?' revealed':''}" data-pi="${pIdx}">${total} pts</span>
+        <span class="reveal-hint">${rev?'tap to hide':'tap to reveal'}</span>
+      </div>
+    `;
+    body.appendChild(div);
+  });
+  body.querySelectorAll('.score-total-val').forEach(el=>{
+    el.addEventListener('click',()=>{
+      revealedScores[+el.dataset.pi]=!revealedScores[+el.dataset.pi];
+      renderScoreSheet();
+    });
+  });
+}
+
+// ── RESULTS ──
+function showResults(){
+  const totals=players.map((_,pi)=>playerTotal(pi,sequence.length));
+  const max=Math.max(...totals);
+  const winners=players.filter((_,i)=>totals[i]===max);
+  $('results-trophy').textContent=winners.length>1?'🤝':'🏆';
+  $('results-headline').textContent=winners.length>1?`${winners.join(' & ')} tie!`:`${winners[0]} wins!`;
+
+  const ranked=players.map((n,i)=>({n,s:totals[i],i})).sort((a,b)=>b.s-a.s);
+  const body=$('results-body');body.innerHTML='';
+  ranked.forEach((p,rank)=>{
+    const isW=p.s===max;
+    const div=document.createElement('div');
+    div.className=`result-row${isW?' winner-row':''}`;
+    let wins=0;
+    const chips=sequence.map((_,ri)=>{
+      const rd=roundData[ri];
+      if(!rd||rd.results[p.i]===null) return `<div class="s-chip empty">—</div>`;
+      const pts=calcPts(rd.bids[p.i],rd.results[p.i]);
+      if(rd.results[p.i]==='win'){wins++;return `<div class="s-chip correct">${pts}</div>`;}
+      return `<div class="s-chip wrong">${rd.bids[p.i]}</div>`;
+    }).join('');
+    div.innerHTML=`
+      <div class="result-row-top">
+        <div class="rank-circle${isW?' gold':''}">${isW?'♛':rank+1}</div>
+        <div class="result-name">${p.n}</div>
+        <div class="result-score${isW?' gold-score':''}">${p.s} pts</div>
+      </div>
+      <div class="result-sub">${wins} of ${sequence.length} correct</div>
+      <div class="result-chips">${chips}</div>
+    `;
+    body.appendChild(div);
+  });
+  show('screen-results');
+}
+
+$('back-home-btn').addEventListener('click',()=>{
+  players=['Alex','Sam','Jordan'];renderSetup();show('screen-setup');
+});
+$('play-again-btn').addEventListener('click',()=>{
+  if(!lastGame) {renderSetup();show('screen-setup');return;}
+  players=[...lastGame.players];
+  sequence=buildSeq(lastGame.start,lastGame.turn,lastGame.end);
+  currentRoundIdx=0;viewingRoundIdx=0;roundPhase='bidding';
+  roundData=sequence.map(()=>({bids:players.map(()=>null),results:players.map(()=>null)}));
+  revealedScores={};bidRestrictionOn=true;
+  lastGame={...lastGame,id:Date.now()};
+  renderGame();show('screen-game');
+});
+
+// ── CONFIRM ──
+function showConfirm(title,msg,cb){
+  $('confirm-title').textContent=title;
+  $('confirm-msg').textContent=msg;
+  confirmCb=cb;
+  $('confirm-overlay').classList.add('open');
+}
+$('confirm-cancel').addEventListener('click',()=>$('confirm-overlay').classList.remove('open'));
+$('confirm-ok').addEventListener('click',()=>{$('confirm-overlay').classList.remove('open');if(confirmCb)confirmCb();});
+
+// ── INIT ──
+renderSetup();
+</script>
+</body>
+</html>
