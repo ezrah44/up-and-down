@@ -123,19 +123,32 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 }
 .s-label span{font-size:12px;text-transform:none;letter-spacing:0;color:var(--text3);}
 
-.player-list{display:flex;flex-direction:column;gap:6px;}
+.player-list{display:flex;flex-direction:column;gap:6px;position:relative;}
+.drop-indicator{
+  position:absolute;left:0;right:0;height:2px;
+  background:var(--accent);border-radius:2px;
+  pointer-events:none;opacity:0;transition:opacity 0.1s;
+}
+.drop-indicator.visible{opacity:1;}
 .player-row{
   display:flex;align-items:center;gap:10px;
   background:var(--bg2);border:1px solid var(--border);
   border-radius:var(--r);padding:0 12px;height:48px;
-  transition:border-color 0.15s;
+  transition:border-color 0.15s,transform 0.15s ease;
 }
 .player-row:focus-within{border-color:var(--border3);}
+.player-row.dragging{transition:none;}
 .drag-handle{
   display:flex;flex-direction:column;gap:3.5px;
-  cursor:grab;flex-shrink:0;padding:4px 2px;
+  cursor:grab;flex-shrink:0;padding:8px 6px;
+  touch-action:none;
 }
 .drag-handle span{display:block;width:12px;height:1.5px;background:var(--text3);border-radius:2px;}
+.player-row.dragging{
+  position:relative;z-index:10;
+  border-color:var(--border3);
+  box-shadow:0 6px 18px rgba(0,0,0,0.35);
+}
 .player-input{
   flex:1;border:none;outline:none;background:transparent;
   font-size:15px;color:var(--text);font-family:var(--font);
@@ -792,7 +805,6 @@ function renderPlayerList(){
   players.forEach((name,i)=>{
     const row=document.createElement('div');
     row.className='player-row';
-    row.draggable=true;
     row.dataset.idx=i;
     row.innerHTML=`
       <div class="drag-handle" aria-hidden="true"><span></span><span></span><span></span></div>
@@ -814,21 +826,71 @@ function renderPlayerList(){
       renderPlayerList();validateSetup();
     });
   });
-  let dragIdx=null;
-  list.querySelectorAll('.player-row').forEach(row=>{
-    row.addEventListener('dragstart',()=>{dragIdx=+row.dataset.idx;row.style.opacity='0.4';});
-    row.addEventListener('dragend',()=>{row.style.opacity='1';});
-    row.addEventListener('dragover',e=>e.preventDefault());
-    row.addEventListener('drop',e=>{
-      e.preventDefault();
-      const to=+row.dataset.idx;
-      if(dragIdx===null||dragIdx===to) return;
-      const mv=players.splice(dragIdx,1)[0];
-      players.splice(to,0,mv);
-      renderPlayerList();
-    });
+  list.querySelectorAll('.drag-handle').forEach(handle=>{
+    handle.addEventListener('pointerdown',onDragHandlePointerDown);
   });
   updatePlayerCount();
+}
+
+function onDragHandlePointerDown(e){
+  if(e.button!==undefined&&e.button!==0) return;
+  const list=$('player-list');
+  const row=e.currentTarget.closest('.player-row');
+  const rows=Array.from(list.querySelectorAll('.player-row'));
+  const fromIdx=rows.indexOf(row);
+  const listRect=list.getBoundingClientRect();
+  const rects=rows.map(r=>r.getBoundingClientRect());
+  const rowH=rects[fromIdx].height;
+  const startY=e.clientY;
+  const startCenterY=rects[fromIdx].top+rowH/2;
+  const otherIdxs=rows.map((_,i)=>i).filter(i=>i!==fromIdx);
+  const midpoints=otherIdxs.map(i=>rects[i].top+rects[i].height/2);
+  let targetIdx=otherIdxs.filter(i=>i<fromIdx).length;
+
+  row.classList.add('dragging');
+  e.preventDefault();
+
+  const indicator=document.createElement('div');
+  indicator.className='drop-indicator visible';
+  list.appendChild(indicator);
+
+  function updateIndicator(k){
+    let top;
+    if(otherIdxs.length===0){
+      top=0;
+    } else if(k<=0){
+      top=rects[otherIdxs[0]].top-listRect.top-4;
+    } else if(k>=otherIdxs.length){
+      top=rects[otherIdxs[otherIdxs.length-1]].bottom-listRect.top+4;
+    } else {
+      const above=rects[otherIdxs[k-1]],below=rects[otherIdxs[k]];
+      top=((above.bottom+below.top)/2)-listRect.top;
+    }
+    indicator.style.top=top+'px';
+  }
+  updateIndicator(targetIdx);
+
+  function onMove(ev){
+    const dy=ev.clientY-startY;
+    row.style.transform=`translateY(${dy}px)`;
+    const pointerCenterY=startCenterY+dy;
+    targetIdx=midpoints.filter(m=>m<pointerCenterY).length;
+    updateIndicator(targetIdx);
+  }
+  function onUp(){
+    document.removeEventListener('pointermove',onMove);
+    document.removeEventListener('pointerup',onUp);
+    indicator.remove();
+    if(targetIdx!==fromIdx){
+      const mv=players.splice(fromIdx,1)[0];
+      players.splice(targetIdx,0,mv);
+    }
+    row.classList.remove('dragging');
+    row.style.transform='';
+    renderPlayerList();
+  }
+  document.addEventListener('pointermove',onMove);
+  document.addEventListener('pointerup',onUp);
 }
 
 function updatePlayerCount(){
@@ -1072,10 +1134,11 @@ function renderPlayersWrap(){
       bidInp.disabled=true;
     }
 
-    bidInp.addEventListener('input',()=>{
-      const v=parseInt(bidInp.value);
+    bidInp.addEventListener('input',(ev)=>{
+      const raw=bidInp.value;
+      const v=parseInt(raw);
       bidInp.classList.remove('invalid');errEl.textContent='';
-      if(bidInp.value===''||isNaN(v)){rd.bids[pIdx]=null;renderFooter();return;}
+      if(raw===''||isNaN(v)){rd.bids[pIdx]=null;renderFooter();return;}
       if(v<0||v>cards){
         bidInp.classList.add('invalid');errEl.textContent='Invalid';
         rd.bids[pIdx]=null;renderFooter();return;
@@ -1089,6 +1152,16 @@ function renderPlayersWrap(){
       }
       rd.bids[pIdx]=v;
       renderFooter();
+
+      // Auto-advance once no further digit could still form a valid, larger bid
+      // (e.g. cards=9: any single digit is final; cards=13: "1" could still become 10-13, so wait)
+      const isInsertion=!ev.inputType||ev.inputType.startsWith('insert');
+      if(isInsertion&&(v===0||v*10>cards)){
+        const fields=wrap.querySelectorAll('.bid-field');
+        const next=fields[pos+1];
+        if(next) next.focus();
+        else bidInp.blur();
+      }
     });
 
     // Result buttons
